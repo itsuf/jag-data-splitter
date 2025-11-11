@@ -36,6 +36,37 @@ def read_data_file(file_path):
 
     return data
 
+def find_split(data):
+    # We're gonna find the first timestamp where:
+    # Channel 1 == 2, Channel 3 < 3 at the same time
+    channel_1_values = {}
+    channel_3_values = {}
+
+    for row in data:
+        timestamp = row['timestamp']
+        value = row['value']
+        channel = row['channel']
+
+        if channel == 'channel 1':
+            channel_1_values[timestamp] = value
+        elif channel == 'channel 3':
+            channel_3_values[timestamp] = value
+
+    # Lets now find the timestamps that are in both channels
+    shared_timestamps = []
+    for timestamp in channel_1_values:
+        if timestamp in channel_3_values:
+            shared_timestamps.append(timestamp)
+    
+    # Let's go through those timestamps and check condition
+    for timestamp in shared_timestamps:
+        c1_val = channel_1_values[timestamp]
+        c3_val = channel_3_values[timestamp]
+
+        if c1_val == 2 and c3_val < 3:
+            # Here we found our split point
+            return timestamp
+        
 def main():
     if len(sys.argv) != 2:
         print("Usage: python data_splitter.py <input_file>")
@@ -51,6 +82,13 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
         return
+    
+    split = find_split(data)
+
+    if split:
+        print(f"Split found at timestamp: {split}")
+    else:
+        print("Split condition not found here.")
 
 if __name__ == "__main__":
     main()
