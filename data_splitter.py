@@ -27,7 +27,8 @@ def read_data_file(file_path):
                 data.append({
                     'timestamp': timestamp,
                     'value': float(value), # float vals exist so we convert
-                    'channel': channel.strip()
+                    'channel': channel.strip(),
+                    'original_index': len(data)
                 })
             except ValueError:
                 # If we cant parse value as float, skip this line
@@ -37,50 +38,42 @@ def read_data_file(file_path):
     return data
 
 def find_split(data):
-    # We're gonna find the first timestamp where:
-    # Channel 1 == 2, Channel 3 < 3 at the same time
-    channel_1_values = {}
-    channel_3_values = {}
+    # We're gonna find the timestamps where:
+    # Channel 1 == 2, Channel 3 < 3 
+    timestamps = organise_by_timestamp(data)
+    sorted_times = sorted(timestamps.keys())
 
-    for row in data:
-        timestamp = row['timestamp']
-        value = row['value']
-        channel = row['channel'].lower()
-
-        if channel == 'channel 1':
-            channel_1_values[timestamp] = value
-        elif channel == 'channel 3':
-            channel_3_values[timestamp] = value
-
-    # Lets now find the timestamps that are in both channels
-    shared_timestamps = []
-    for timestamp in channel_1_values:
-        if timestamp in channel_3_values:
-            shared_timestamps.append(timestamp)
-    
-    # sort timestamps for chronological order
-    shared_timestamps.sort()
-
-    # Track previous state to detect transitions
     prev_both_met = False
-    split_timestamp = []
+    split_indices = []
 
     # Let's go through those timestamps and check condition
-    for timestamp in shared_timestamps:
-        c1_val = channel_1_values[timestamp]
-        c3_val = channel_3_values[timestamp]
+    for timestamp in sorted_times:
+        channels = timestamps[timestamp]
 
-        if c1_val == 2 and c3_val < 3:
-            both_met = True
+        # CHeck if both conditions are met
+        has_channel_1 = 'channel 1' in channels
+        has_channel_3 = 'channel 3' in channels
+
+        if has_channel_1 and has_channel_3:
+            channel_1_value = channels['channel 1']['value']
+            channel_3_value = channels['channel 3']['value']
+
+            both_met = (channel_1_value == 2) and (channel_3_value < 3)
+        else:
+            both_met = False
         
+        # only split when we go from not met to met
         if both_met and not prev_both_met:
-            # Transition detected
-            split_timestamp.append(timestamp)
-            print(f"Split condition met at timestamp: {timestamp}")
+            # find which row to start the new segment from
+            indicies = [channl['index'] for channl in channels.values()]
+
+            split_index = min(indicies)
+            split_indices.append(split_index)
+
+            print(f"Split found at timestamp {timestamp} (row index {split_index})")
 
         prev_both_met = both_met
-    
-    return None  # split not found
+
 
 def write_output(data, split, input_file):
     # Writes the output files based on the split point
@@ -117,6 +110,23 @@ def write_output(data, split, input_file):
                 file.write(f"{row['timestamp']}|{row['value']}|{row['channel']}\n")
         print(f"Written segment {i} to {output_file} with {len(segment)} rows")
         
+def organise_by_timestamp(data):
+    # Group channel readings by timestamp
+    timestamp_dict = {}
+
+    for row in data:
+        timestamp = row['timestamp']
+        if timestamp not in timestamp_dict:
+            timestamp_dict[timestamp] = {}
+        
+        channel = row['channel'].lower()
+        timestamp_dict[timestamp][channel] = {
+            'value': row['value'],
+            'index': row['original_index']
+        }
+    
+    return timestamp_dict
+
 def main():
     if len(sys.argv) != 2:
         print("Usage: python data_splitter.py <input_file>")
