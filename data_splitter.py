@@ -74,41 +74,42 @@ def find_split(data):
 
         prev_both_met = both_met
 
+    return sorted(split_indices)
 
-def write_output(data, split, input_file):
-    # Writes the output files based on the split point
-    if split is None:
-        print("Split not found.")
-        return
+def create_segments(data, split_indices):
+    # Split data into segments based on split indices
+    if not split_indices:
+        return [data]
     
-    # creates segments based on split timestamp
     segments = []
-    current_segment = []
+    start_index = 0
 
-    for row in data:
-        # check if we've hit a split point
-        if row['timestamp'] in split and current_segment:
-            segments.append(current_segment)
-            current_segment = []
-        
-        current_segment.append(row)
+    for split_index in split_indices:
+        if split_index > start_index:
+            segments.append(data[start_index:split_index])
+            start_index = split_index
+    
+    # add what remains as final segment
+    if start_index < len(data):
+        segments.append(data[start_index:])
 
-    # add final segment
-    if current_segment:
-        segments.append(current_segment)
+    return segments
 
-    # write each segment to a file
+def write_output(segments, input_file):
+    # Now we gotta write pre-created segments 
     base_name = os.path.splitext(os.path.basename(input_file))[0]
 
     for i, segment in enumerate(segments, start=1):
         output_file = f"{base_name}_part{i}.dat"
 
         with open(output_file, 'w') as file:
-            # write header
+            # Write header
             file.write("Timestamp|Value|Channel\n")
+            
             for row in segment:
                 file.write(f"{row['timestamp']}|{row['value']}|{row['channel']}\n")
-        print(f"Written segment {i} to {output_file} with {len(segment)} rows")
+        
+        print(f"Written segment {i} to {output_file} with ({len(segment)} rows)")
         
 def organise_by_timestamp(data):
     # Group channel readings by timestamp
@@ -143,9 +144,17 @@ def main():
         print(f"Error: {e}")
         return
     
+    # Find split points
     splits = find_split(data)
+    print(f"Found {len(splits)} split points\n")
 
-    write_output(data, splits, input_file)
+    # Create segments
+    segments = create_segments(data, splits)
+    print(f"Created {len(segments)} segments\n")
+
+    # Write output files
+    write_output(segments, input_file)
+    print("Finished!")
 
 if __name__ == "__main__":
     main()
