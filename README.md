@@ -25,3 +25,11 @@ Output is given in a folder named [Original file name]_segments
 [Original File Name]_segment_1.dat
 [Original File Name]_segment_2.dat
 ...
+
+Author
+
+Yusuf Khan
+yusufkhann2077@gmail.com
+
+GitHub/Uni Email:
+sc23yk@leeds.ac.uk
