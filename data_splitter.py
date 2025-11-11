@@ -58,14 +58,27 @@ def find_split(data):
         if timestamp in channel_3_values:
             shared_timestamps.append(timestamp)
     
+    # sort timestamps for chronological order
+    shared_timestamps.sort()
+
+    # Track previous state to detect transitions
+    prev_both_met = False
+    split_timestamp = []
+
     # Let's go through those timestamps and check condition
     for timestamp in shared_timestamps:
         c1_val = channel_1_values[timestamp]
         c3_val = channel_3_values[timestamp]
 
         if c1_val == 2 and c3_val < 3:
-            # Here we found our split point
-            return timestamp
+            both_met = True
+        
+        if both_met and not prev_both_met:
+            # Transition detected
+            split_timestamp.append(timestamp)
+            print(f"Split condition met at timestamp: {timestamp}")
+
+        prev_both_met = both_met
     
     return None  # split not found
 
