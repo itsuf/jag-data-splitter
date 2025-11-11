@@ -45,7 +45,7 @@ def find_split(data):
     for row in data:
         timestamp = row['timestamp']
         value = row['value']
-        channel = row['channel']
+        channel = row['channel'].lower()
 
         if channel == 'channel 1':
             channel_1_values[timestamp] = value
@@ -66,6 +66,32 @@ def find_split(data):
         if c1_val == 2 and c3_val < 3:
             # Here we found our split point
             return timestamp
+    
+    return None  # split not found
+
+def write_output(data, split):
+    # Writes the output files based on the split point
+    if split is None:
+        print("Split not found.")
+        return
+
+    pre_split = 'before_split.csv'
+    post_split = 'after_split.csv'
+
+    with open(pre_split, 'w') as before_file, open(post_split, 'w') as after_file:
+        # Write headers
+        before_file.write("Timestamp|Value|Channel\n")
+        after_file.write("Timestamp|Value|Channel\n")
+
+        # write data to file
+        for row in data:
+            line = f"{row['timestamp']}|{row['value']}|{row['channel']}\n"
+            if row['timestamp'] < split:
+                before_file.write(line)
+            else:
+                after_file.write(line)
+
+    print(f"Output files written: {pre_split}, {post_split}")
         
 def main():
     if len(sys.argv) != 2:
@@ -89,6 +115,8 @@ def main():
         print(f"Split found at timestamp: {split}")
     else:
         print("Split condition not found here.")
+
+    write_output(data, split)
 
 if __name__ == "__main__":
     main()
