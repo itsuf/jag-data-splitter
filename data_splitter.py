@@ -82,29 +82,40 @@ def find_split(data):
     
     return None  # split not found
 
-def write_output(data, split):
+def write_output(data, split, input_file):
     # Writes the output files based on the split point
     if split is None:
         print("Split not found.")
         return
+    
+    # creates segments based on split timestamp
+    segments = []
+    current_segment = []
 
-    pre_split = 'before_split.csv'
-    post_split = 'after_split.csv'
+    for row in data:
+        # check if we've hit a split point
+        if row['timestamp'] in split and current_segment:
+            segments.append(current_segment)
+            current_segment = []
+        
+        current_segment.append(row)
 
-    with open(pre_split, 'w') as before_file, open(post_split, 'w') as after_file:
-        # Write headers
-        before_file.write("Timestamp|Value|Channel\n")
-        after_file.write("Timestamp|Value|Channel\n")
+    # add final segment
+    if current_segment:
+        segments.append(current_segment)
 
-        # write data to file
-        for row in data:
-            line = f"{row['timestamp']}|{row['value']}|{row['channel']}\n"
-            if row['timestamp'] < split:
-                before_file.write(line)
-            else:
-                after_file.write(line)
+    # write each segment to a file
+    base_name = os.path.splitext(os.path.basename(input_file))[0]
 
-    print(f"Output files written: {pre_split}, {post_split}")
+    for i, segment in enumerate(segments, start=1):
+        output_file = f"{base_name}_part{i}.dat"
+
+        with open(output_file, 'w') as file:
+            # write header
+            file.write("Timestamp|Value|Channel\n")
+            for row in segment:
+                file.write(f"{row['timestamp']}|{row['value']}|{row['channel']}\n")
+        print(f"Written segment {i} to {output_file} with {len(segment)} rows")
         
 def main():
     if len(sys.argv) != 2:
