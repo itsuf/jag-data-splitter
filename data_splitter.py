@@ -133,14 +133,9 @@ def main():
         print(f"Error: {e}")
         return
     
-    split = find_split(data)
+    splits = find_split(data)
 
-    if split:
-        print(f"Split found at timestamp: {split}")
-    else:
-        print("Split condition not found here.")
-
-    write_output(data, split)
+    write_output(data, splits, input_file)
 
 if __name__ == "__main__":
     main()
