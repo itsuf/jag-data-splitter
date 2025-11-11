@@ -1,0 +1,8 @@
+# venv
+venv/
+
+# mac files
+.DS_Store
+
+# pycache
+__pycache__/
