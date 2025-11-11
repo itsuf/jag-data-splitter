@@ -98,9 +98,12 @@ def create_segments(data, split_indices):
 def write_output(segments, input_file):
     # Now we gotta write pre-created segments 
     base_name = os.path.splitext(os.path.basename(input_file))[0]
+    output_dir = f"{base_name}_segments"
+
+    os.makedirs(output_dir, exist_ok=True)
 
     for i, segment in enumerate(segments, start=1):
-        output_file = f"{base_name}_part{i}.dat"
+        output_file = os.path.join(output_dir, f"{base_name}_segment_{i}.dat")
 
         with open(output_file, 'w') as file:
             # Write header
